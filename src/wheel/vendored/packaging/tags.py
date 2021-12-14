@@ -52,6 +52,7 @@ INTERPRETER_SHORT_NAMES = {
     "pypy": "pp",
     "ironpython": "ip",
     "jython": "jy",
+    "pyston": "pt",
 }  # type: Dict[str, str]
 
 
@@ -291,6 +292,41 @@ def cpython_tags(
                 )
                 yield Tag(interpreter, "abi3", platform_)
 
+def pyston_tags(
+    python_version=None,  # type: Optional[PythonVersion]
+    abis=None,  # type: Optional[Iterable[str]]
+    platforms=None,  # type: Optional[Iterable[str]]
+    **kwargs  # type: bool
+):
+    # type: (...) -> Iterator[Tag]
+    """
+    Yields the tags for a Pyston interpreter.
+
+    The tags consist of:
+    - pt<python_version>-<abi>-<platform>
+    - pt<python_version>-none-<platform>
+
+    If python_version only specifies a major version then user-provided ABIs and
+    the 'none' ABItag will be used.
+
+    If 'abi3' or 'none' are specified in 'abis' then they will be yielded at
+    their normal position and not at the beginning.
+    """
+    warn = _warn_keyword_parameter("pyston_tags", kwargs)
+    if not python_version:
+        python_version = sys.version_info[:2]
+
+    interpreter = "pt{}{}".format(*python_version)
+
+    if abis is None:
+        abis = ["pt{}{}".format(*sys.pyston_version_info[:2]), ]
+    platforms = list(platforms or _platform_tags())
+    abis = list(abis)
+    if "none" not in abis:
+        abis.append("none")
+    for abi in abis:
+        for platform_ in platforms:
+            yield Tag(interpreter, abi, platform_)
 
 def _generic_abi():
     # type: () -> Iterator[str]
@@ -857,6 +893,9 @@ def sys_tags(**kwargs):
     interp_name = interpreter_name()
     if interp_name == "cp":
         for tag in cpython_tags(warn=warn):
+            yield tag
+    elif interp_name == "pt":
+        for tag in pyston_tags(warn=warn):
             yield tag
     else:
         for tag in generic_tags():

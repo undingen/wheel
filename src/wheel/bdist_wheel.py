@@ -101,6 +101,11 @@ def get_abi_tag():
         # we want something like pypy36-pp73
         abi = '-'.join(soabi.split('-')[:2])
         abi = abi.replace('.', '_').replace('-', '_')
+    elif soabi and soabi.startswith('pyston-'):
+        # soabi is something like pyston-23-x86_64-linux-gnu
+        # we want something like pt23
+        abi = "".join(soabi.split('-')[:2])
+        abi = abi.replace("pyston", "pt")
     elif soabi:
         abi = soabi.replace('.', '_').replace('-', '_')
     else:
